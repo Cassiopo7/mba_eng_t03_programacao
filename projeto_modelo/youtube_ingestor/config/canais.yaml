@@ -1,0 +1,43 @@
+# =============================================================================
+# Configuracao declarativa da ingestao perene.
+# A FREQUENCIA de cada canal e decisao de NEGOCIO, nao de codigo:
+# noticia de guerra muda em minutos; review de gadget, em horas.
+# Edite este arquivo para adicionar/remover canais sem tocar no codigo.
+# =============================================================================
+
+# Cada canal precisa do channel_id (UC...). Como descobrir:
+#   - abra o canal no YouTube > "Compartilhar canal" > "Copiar ID do canal"
+#   - ou use scripts/resolver_handle.py @nomedocanal
+canais:
+
+  - nome: "Geopolitica - Noticias"
+    channel_id: "UCXXXXXXXXXXXXXXXXXXXXXX"   # troque pelo ID real
+    dominio: "geopolitica"
+    intervalo_min: 15          # alta volatilidade -> janela curta
+    max_videos_por_ciclo: 10
+    vocabulario: ["guerra", "sancao", "conflito", "embargo", "tropas"]
+    ativo: true
+
+  - nome: "Financas - Mercado"
+    channel_id: "UCYYYYYYYYYYYYYYYYYYYYYY"
+    dominio: "financas"
+    intervalo_min: 60          # pautas macro mudam mais devagar
+    max_videos_por_ciclo: 5
+    vocabulario: ["juros", "inflacao", "recessao", "selic", "dolar"]
+    ativo: true
+
+  - nome: "Reviews - Gadgets"
+    channel_id: "UCZZZZZZZZZZZZZZZZZZZZZZ"
+    dominio: "reviews"
+    intervalo_min: 360         # review nao tem urgencia -> 6h
+    max_videos_por_ciclo: 5
+    vocabulario: ["bateria", "tela", "aquecimento", "trava", "camera"]
+    ativo: false               # exemplo de canal desligado sem apagar config
+
+# Parametros globais do ingestor
+global:
+  idiomas_legenda: ["pt", "pt-BR", "en"]
+  # Modo demo: ignora a API real e gera dados sinteticos deterministicos.
+  # Permite rodar a aula inteira SEM API key e SEM consumir cota.
+  modo_demo: true
+  janela_descoberta_dias: 30   # so considera videos publicados nos ultimos N dias

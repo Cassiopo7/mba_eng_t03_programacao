@@ -1,0 +1,188 @@
+{
+  "footer": "Linguagens de Programação para Engenharia de Dados · Desafio 2: Ingestão Perene",
+  "slides": [
+    {
+      "type": "capa",
+      "disciplina": "Da Análise à Ingestão Perene",
+      "curso": "Especialização em Engenharia de Dados — UNIFOR",
+      "encontro_label": "Desafio 2 · de 10 notebooks a um pipeline que roda sozinho",
+      "professor": "Cassio Pinheiro",
+      "carga": "Continuação do Projeto YouTube"
+    },
+    {
+      "type": "conteudo",
+      "titulo": "Onde paramos: os 10 notebooks",
+      "subtitulo": "Desafio 1 — a pegada de cientista",
+      "bullets": [
+        "10 domínios, cada um com seu Gold específico (finanças, geopolítica, saúde, e-commerce...).",
+        "Pipeline Bronze → Silver → Gold, com fallback sintético e contrato Pandera.",
+        "O aluno colava os VIDEO_IDS na mão e rodava o notebook UMA vez para explorar.",
+        "Palavra-chave: explorar. Postura de quem investiga o dado, não de quem opera um sistema."
+      ]
+    },
+    {
+      "type": "citacao",
+      "linhas": [
+        "Se o dado é água, o engenheiro constrói o encanamento;",
+        "o cientista analisa o que a água revela.",
+        "Sem encanamento, não há análise.  — Encontro 1"
+      ]
+    },
+    {
+      "type": "conteudo",
+      "titulo": "O que faltava: as perguntas do engenheiro",
+      "subtitulo": "O notebook diz 'o que o dado revela'; e o resto?",
+      "bullets": [
+        "Quem cola os IDs todo dia? E se forem 30 canais?",
+        "Como sei o que é novo desde ontem, sem reprocessar tudo?",
+        "Se eu rodar duas vezes, eu duplico os dados?",
+        "Quem garante que roda às 6h sem eu abrir o VS Code?",
+        "→ Estas 4 perguntas viram os 4 pilares do ingestor."
+      ]
+    },
+    {
+      "type": "citacao",
+      "linhas": [
+        "Um script roda uma vez;",
+        "um pipeline roda muitas — de forma confiável.",
+        "Idempotência · Erro · Rastreabilidade · Observabilidade  (E1)"
+      ]
+    },
+    {
+      "type": "conteudo",
+      "titulo": "O Desafio 2: ingestão perene",
+      "subtitulo": "projeto_modelo — a continuação natural",
+      "bullets": [
+        "Entrada: cola VIDEO_IDS na mão  →  descobre sozinho (YouTube Data API).",
+        "Execução: roda 1 vez supervisionado  →  roda perene, agendado.",
+        "Estado: nenhum  →  SQLite com watermark + idempotência.",
+        "Postura: cientista explora  →  engenheiro opera.",
+        "Mesma matéria-prima e mesmo Bronze/Silver/Gold; muda tudo em volta."
+      ]
+    },
+    {
+      "type": "conteudo",
+      "titulo": "Os 4 pilares",
+      "subtitulo": "Cada um responde uma pergunta e ecoa um encontro",
+      "bullets": [
+        "1. Descoberta automática — acabou colar ID; a API acha os vídeos novos.",
+        "2. Incrementalidade (watermark) — só processa o que é novo (eco do E4).",
+        "3. Idempotência — rodar N vezes não duplica; legenda corrigida reprocessa (E1/E5).",
+        "4. Agendamento por negócio — cada canal no seu ritmo (eco do E6)."
+      ]
+    },
+    {
+      "type": "conteudo",
+      "titulo": "Pilar 1: Descoberta automática + cota",
+      "subtitulo": "Não basta funcionar; tem que caber na restrição de custo",
+      "bullets": [
+        "Sai de VIDEO_IDS=[...] para o canal inteiro, via YouTube Data API v3.",
+        "Cota: 10.000 unidades/dia. search.list custa 100; playlistItems.list custa 1.",
+        "Estratégia: channels.list → playlist de uploads → playlistItems.list.",
+        "Resultado: ~2 unidades por canal/ciclo → dezenas de canais o dia todo."
+      ]
+    },
+    {
+      "type": "conteudo",
+      "titulo": "Pilar 2: Incrementalidade (watermark)",
+      "subtitulo": "Eco do Encontro 4 — processe menos",
+      "bullets": [
+        "Guarda o maior publishedAt já processado por canal.",
+        "No próximo ciclo, ignora tudo que é <= watermark.",
+        "É o particionamento e a leitura incremental do E4, aplicados ao tempo.",
+        "E4: 'o ganho não vem de processar mais rápido — vem de processar menos'."
+      ]
+    },
+    {
+      "type": "conteudo",
+      "titulo": "Pilar 3: Idempotência + contrato",
+      "subtitulo": "Eco dos Encontros 1 e 5",
+      "bullets": [
+        "content_hash (sha256) da transcrição: já vi e não mudou? então pula (não duplica).",
+        "Hash muda = legenda corrigida → reprocessa só aquele vídeo.",
+        "Falha de schema Pandera → vídeo vai para FAILED (quarentena do E5).",
+        "E5: 'validar é metade; a outra metade é decidir o que fazer com o que falhou'."
+      ]
+    },
+    {
+      "type": "conteudo",
+      "titulo": "Pilar 4: Agendamento por negócio",
+      "subtitulo": "Eco do Encontro 6 — um agendador diz QUANDO",
+      "bullets": [
+        "APScheduler agenda cada canal no seu intervalo, declarado em canais.yaml.",
+        "Guerra: 15 min · Finanças: 60 min · Reviews: 360 min — decisão de negócio.",
+        "Frequência mora no YAML; mudar não exige tocar no código Python.",
+        "Modos: --once (1 ciclo), perene (agendado), --status (resumo do estado)."
+      ]
+    },
+    {
+      "type": "conteudo",
+      "titulo": "A estrutura completa: um ciclo",
+      "subtitulo": "O Bronze→Silver→Gold dos notebooks, agora com casca de produção",
+      "bullets": [
+        "descobrir (incremental, via watermark)",
+        "  → captar transcrição (BRONZE) → limpar + contrato (SILVER, parquet particionado)",
+        "  → atualizar estado SQLite (idempotência)",
+        "rodar analítico do domínio (GOLD) → avançar o watermark",
+        "Saída: datalake/ com control/ (estado), silver/dominio=/dt=/, gold/dominio=/."
+      ]
+    },
+    {
+      "type": "conteudo",
+      "titulo": "O estado é a fonte da verdade",
+      "subtitulo": "SQLite responde as 3 perguntas do engenheiro",
+      "bullets": [
+        "O que já ingeri? → tabela ingestion_state (PK = video_id).",
+        "O que mudou desde a última vez? → channel_watermark (maior publishedAt).",
+        "Como evito duplicar/corromper? → UPSERT idempotente + content_hash.",
+        "Status: DISCOVERED → INGESTED → FAILED/SKIPPED. --status dá observabilidade (E1)."
+      ]
+    },
+    {
+      "type": "conteudo",
+      "titulo": "Como tudo amarra no curso (E1→E6)",
+      "subtitulo": "A ingestão perene é o curso inteiro convergindo",
+      "bullets": [
+        "E1 Fundamentos — idempotência, erro, rastreabilidade, observabilidade (state.py).",
+        "E2 pandas — limpeza na camada Silver · E3 SQL — Gold em DuckDB.",
+        "E4 Escala — Parquet, particionamento, 'processe menos' (watermark).",
+        "E5 Qualidade — Pandera, data contract, quarentena (status FAILED).",
+        "E6 Orquestração — agendar, repetir, reprocessar (APScheduler + canais.yaml)."
+      ]
+    },
+    {
+      "type": "conteudo",
+      "titulo": "Rodar perene de verdade: a VPS",
+      "subtitulo": "systemd — tirar o humano da cadeira (E6)",
+      "bullets": [
+        "scripts/ingestor.service → systemctl enable --now ingestor (sobe no boot).",
+        "Restart=always → se o processo cai, o systemd ressuscita.",
+        "journalctl -u ingestor -f → logs em tempo real (observabilidade).",
+        "Roda sem o seu computador ligado: de 'um script que eu rodo' a 'um sistema que existe'."
+      ]
+    },
+    {
+      "type": "pratica",
+      "titulo": "Demo",
+      "bullets": [
+        "python -m youtube_ingestor.scheduler --once  → 1 ciclo por canal (sem API key).",
+        "--status → mostra {'INGESTED': N}.",
+        "Rodar --once de novo → o watermark avançou: incrementalidade em ação.",
+        "Abrir o Parquet Silver → partições dominio=/dt= e a coluna do contrato."
+      ]
+    },
+    {
+      "type": "citacao",
+      "linhas": [
+        "O notebook responde 'o que o dado diz'.",
+        "O ingestor responde 'como esse dado chega, confiável, todo dia, sem mim'.",
+        "Engenharia de dados é dominar as duas perguntas."
+      ]
+    },
+    {
+      "type": "contato",
+      "titulo": "Obrigado!",
+      "nome": "Cassio Pinheiro"
+    }
+  ]
+}
